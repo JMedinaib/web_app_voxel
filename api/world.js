@@ -1,8 +1,8 @@
-import { put, list, del } from '@vercel/blob';
+const { put, list, del } = require('@vercel/blob');
 
 const WORLD_STATE_KEY = 'world-state.json';
 
-export default async function handler(request, response) {
+module.exports = async function handler(request, response) {
   // GET - Load world state
   if (request.method === 'GET') {
     try {
@@ -25,12 +25,7 @@ export default async function handler(request, response) {
   // POST - Save world state
   if (request.method === 'POST') {
     try {
-      const chunks = [];
-      for await (const chunk of request) {
-        chunks.push(chunk);
-      }
-      const body = Buffer.concat(chunks).toString();
-      const worldState = JSON.parse(body);
+      const worldState = request.body;
 
       // Delete old world state if exists
       const { blobs } = await list({ prefix: WORLD_STATE_KEY });
@@ -53,4 +48,4 @@ export default async function handler(request, response) {
   }
 
   return response.status(405).json({ error: 'Method not allowed' });
-}
+};

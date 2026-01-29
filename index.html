@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voxel Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="sceneCanvas"></canvas>
+
+  <!-- Filter Panel -->
+  <div id="filterPanel" class="filter-panel">
+    <div class="filter-header">
+      <span>Filter Categories</span>
+      <button id="toggleAllBtn" class="toggle-all-btn">Hide All Voxels</button>
+    </div>
+    <div class="filter-list">
+      <label class="filter-item" data-category="none">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #888888;"></span>
+        <span>Uncategorized</span>
+      </label>
+      <label class="filter-item" data-category="column">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #00e5a0;"></span>
+        <span>Column</span>
+      </label>
+      <label class="filter-item" data-category="floor">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #00d4ff;"></span>
+        <span>Floor</span>
+      </label>
+      <label class="filter-item" data-category="stairs">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #7b68ee;"></span>
+        <span>Stairs</span>
+      </label>
+      <label class="filter-item" data-category="walls">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #ff6eb4;"></span>
+        <span>Walls</span>
+      </label>
+      <label class="filter-item" data-category="facades">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #40e0d0;"></span>
+        <span>Facades</span>
+      </label>
+      <label class="filter-item" data-category="roof">
+        <input type="checkbox" checked>
+        <span class="color-dot" style="background: #da70d6;"></span>
+        <span>Roof</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Instructions overlay -->
+  <div class="instructions">
+    <span><strong>Ctrl+Click</strong> to place voxel</span>
+    <span><strong>Right-click</strong> voxel for options</span>
+    <span><strong>Drag</strong> to rotate view</span>
+  </div>
+
+  <!-- Context Menu (right-click) -->
+  <div id="contextMenu" class="context-menu">
+    <div id="cellInfo" class="context-header">Voxel (0, 0, 0)</div>
+
+    <!-- Category Selection -->
+    <div class="context-section">Category</div>
+    <div class="category-list">
+      <button class="category-btn" data-category="none">
+        <span class="cat-color" style="background: #888888;"></span>
+        <span>Uncategorized</span>
+      </button>
+      <button class="category-btn" data-category="column">
+        <span class="cat-color" style="background: #00e5a0;"></span>
+        <span>Column</span>
+      </button>
+      <button class="category-btn" data-category="floor">
+        <span class="cat-color" style="background: #00d4ff;"></span>
+        <span>Floor</span>
+      </button>
+      <button class="category-btn" data-category="stairs">
+        <span class="cat-color" style="background: #7b68ee;"></span>
+        <span>Stairs</span>
+      </button>
+      <button class="category-btn" data-category="walls">
+        <span class="cat-color" style="background: #ff6eb4;"></span>
+        <span>Walls</span>
+      </button>
+      <button class="category-btn" data-category="facades">
+        <span class="cat-color" style="background: #40e0d0;"></span>
+        <span>Facades</span>
+      </button>
+      <button class="category-btn" data-category="roof">
+        <span class="cat-color" style="background: #da70d6;"></span>
+        <span>Roof</span>
+      </button>
+    </div>
+
+    <div class="context-divider"></div>
+
+    <button id="uploadBtn" class="context-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Upload Model
+    </button>
+    <button id="deleteModelBtn" class="context-item" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      Remove Model
+    </button>
+    <button id="deleteVoxelBtn" class="context-item danger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+      Delete Voxel
+    </button>
+  </div>
+
+  <!-- Hidden file input -->
+  <input type="file" id="fileInput" accept=".obj,.glb,.gltf" style="display:none;">
+
+  <!-- Status toast -->
+  <div id="statusToast" class="status-toast"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

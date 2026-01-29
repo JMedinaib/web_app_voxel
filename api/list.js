@@ -1,8 +1,8 @@
-import { list } from '@vercel/blob';
+const { list } = require('@vercel/blob');
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async function handler(request, response) {
+  if (request.method !== 'GET') {
+    return response.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -20,9 +20,9 @@ export default async function handler(req, res) {
         uploadedAt: blob.uploadedAt
       }));
 
-    return res.status(200).json({ items });
+    return response.status(200).json({ items });
   } catch (error) {
     console.error('List error:', error);
-    return res.status(500).json({ error: 'Failed to list files' });
+    return response.status(500).json({ error: 'Failed to list files' });
   }
-}
+};

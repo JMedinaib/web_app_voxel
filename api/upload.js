@@ -1,19 +1,12 @@
-import { put } from '@vercel/blob';
+const { put } = require('@vercel/blob');
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default async function handler(request, response) {
+module.exports = async function handler(request, response) {
   if (request.method !== 'POST') {
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const filename = url.searchParams.get('filename');
+    const filename = request.query.filename;
 
     if (!filename) {
       return response.status(400).json({ error: 'Filename is required' });
@@ -41,4 +34,10 @@ export default async function handler(request, response) {
     console.error('Upload error:', error);
     return response.status(500).json({ error: 'Upload failed: ' + error.message });
   }
-}
+};
+
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
+};
