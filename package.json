@@ -1,0 +1,21 @@
+{
+  "name": "viewer-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "test:ui": "node --test test/ui.test.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.23.0",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0",
+    "supertest": "^7.1.1"
+  }
+}
