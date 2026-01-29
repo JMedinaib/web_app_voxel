@@ -2,33 +2,31 @@ import { put, list, del } from '@vercel/blob';
 
 const WORLD_STATE_KEY = 'world-state.json';
 
-export default async function handler(req, res) {
+export default async function handler(request, response) {
   // GET - Load world state
-  if (req.method === 'GET') {
+  if (request.method === 'GET') {
     try {
       const { blobs } = await list({ prefix: WORLD_STATE_KEY });
 
       if (blobs.length === 0) {
-        return res.status(200).json({ voxels: [] });
+        return response.status(200).json({ voxels: [] });
       }
 
-      // Fetch the world state JSON
-      const response = await fetch(blobs[0].url);
-      const worldState = await response.json();
+      const res = await fetch(blobs[0].url);
+      const worldState = await res.json();
 
-      return res.status(200).json(worldState);
+      return response.status(200).json(worldState);
     } catch (error) {
       console.error('Load world error:', error);
-      return res.status(200).json({ voxels: [] });
+      return response.status(200).json({ voxels: [] });
     }
   }
 
   // POST - Save world state
-  if (req.method === 'POST') {
+  if (request.method === 'POST') {
     try {
-      // Read the request body
       const chunks = [];
-      for await (const chunk of req) {
+      for await (const chunk of request) {
         chunks.push(chunk);
       }
       const body = Buffer.concat(chunks).toString();
@@ -47,12 +45,12 @@ export default async function handler(req, res) {
         contentType: 'application/json',
       });
 
-      return res.status(200).json({ success: true, url: blob.url });
+      return response.status(200).json({ success: true, url: blob.url });
     } catch (error) {
       console.error('Save world error:', error);
-      return res.status(500).json({ error: 'Failed to save world state' });
+      return response.status(500).json({ error: 'Failed to save world state' });
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return response.status(405).json({ error: 'Method not allowed' });
 }

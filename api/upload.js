@@ -6,31 +6,30 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(request, response) {
+  if (request.method !== 'POST') {
+    return response.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const filename = req.query.filename;
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    const filename = url.searchParams.get('filename');
 
     if (!filename) {
-      return res.status(400).json({ error: 'Filename is required' });
+      return response.status(400).json({ error: 'Filename is required' });
     }
 
-    // Check file extension
     const ext = filename.split('.').pop().toLowerCase();
     if (!['obj', 'glb', 'gltf'].includes(ext)) {
-      return res.status(400).json({ error: 'Only .obj, .glb, and .gltf files are allowed' });
+      return response.status(400).json({ error: 'Only .obj, .glb, and .gltf files are allowed' });
     }
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, req, {
+    const blob = await put(filename, request, {
       access: 'public',
       addRandomSuffix: true,
     });
 
-    return res.status(200).json({
+    return response.status(200).json({
       success: true,
       file: {
         name: blob.pathname,
@@ -40,6 +39,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    return res.status(500).json({ error: 'Upload failed: ' + error.message });
+    return response.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 }
