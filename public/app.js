@@ -319,7 +319,8 @@ function createVoxel(position, category = 'none', rotation = 0, customHeight = n
 // Change voxel category/color
 function setVoxelCategory(voxelGroup, category) {
   const color = CATEGORIES[category].color;
-  const key = getVoxelKey(voxelGroup.position);
+  // Use originalKey for resized voxels
+  const key = voxelGroup.userData.originalKey || getVoxelKey(voxelGroup.position);
   const data = voxelData.get(key);
 
   if (data) {
