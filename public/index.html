@@ -7,12 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
   <script type="importmap">
   {
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
+      "suncalc": "https://cdn.jsdelivr.net/npm/suncalc@1.9.0/+esm"
     }
   }
   </script>
@@ -25,6 +26,33 @@
     <div class="filter-header">
       <span>Filter Categories</span>
       <button id="toggleAllBtn" class="toggle-all-btn">Hide All Voxels</button>
+    </div>
+    <div class="render-mode-section">
+      <label class="section-label">Render Mode</label>
+      <select id="renderModeSelect" class="render-mode-select">
+        <option value="normal">Normal</option>
+        <option value="shadow">Shadow</option>
+        <option value="wireframe">Wireframe</option>
+      </select>
+    </div>
+    <div class="section-plane-section">
+      <label class="section-label">
+        <input type="checkbox" id="sectionPlaneEnabled">
+        Section Plane
+      </label>
+      <div id="sectionControls" class="section-controls" style="display:none;">
+        <div class="axis-buttons">
+          <button class="axis-btn active" data-axis="y">Y</button>
+          <button class="axis-btn" data-axis="x">X</button>
+          <button class="axis-btn" data-axis="z">Z</button>
+        </div>
+        <input type="range" id="sectionSlider" class="section-slider" min="0" max="100" value="50">
+        <div class="section-value"><span id="sectionValue">50</span>%</div>
+        <label class="flip-label">
+          <input type="checkbox" id="sectionFlip">
+          Flip Direction
+        </label>
+      </div>
     </div>
     <div class="filter-list">
       <label class="filter-item" data-category="none">
@@ -111,6 +139,24 @@
 
     <div class="context-divider"></div>
 
+    <!-- Rotation Controls -->
+    <div class="context-section">Rotate Model</div>
+    <div class="rotation-controls">
+      <button id="rotateLeftBtn" class="rotation-btn" title="Rotate 90° Left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+      </button>
+      <span class="rotation-display" id="rotationDisplay">0°</span>
+      <button id="rotateRightBtn" class="rotation-btn" title="Rotate 90° Right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="context-divider"></div>
+
     <button id="uploadBtn" class="context-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -119,13 +165,19 @@
       </svg>
       Upload Model
     </button>
-    <button id="deleteModelBtn" class="context-item" style="display:none;">
+    <button id="fitToModelBtn" class="context-item" style="display:none;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="9" y1="15" x2="15" y2="15"/>
+        <path d="M21 3H3v18h18V3z"/>
+        <path d="M9 9v6M15 9v6M9 12h6"/>
       </svg>
-      Remove Model
+      Fit Voxel to Model
+    </button>
+    <button id="unfitVoxelBtn" class="context-item" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 3H3v18h18V3z"/>
+        <path d="M7 12h10"/>
+      </svg>
+      Reset Voxel Height
     </button>
     <button id="deleteVoxelBtn" class="context-item danger">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -142,6 +194,67 @@
   <!-- Status toast -->
   <div id="statusToast" class="status-toast"></div>
 
-  <script type="module" src="/app.js"></script>
+  <!-- Solar Analysis Panel -->
+  <div id="solarPanel" class="solar-panel">
+    <div class="solar-header">
+      <span>Solar Analysis</span>
+      <button id="toggleSolarPanel" class="toggle-solar-btn">-</button>
+    </div>
+    <div class="solar-content">
+      <div class="solar-row">
+        <label>Location</label>
+        <select id="locationSelect">
+          <option value="47.3769,8.5417">Zurich</option>
+          <option value="41.3851,2.1734">Barcelona</option>
+          <option value="40.4168,-3.7038">Madrid</option>
+          <option value="48.8566,2.3522">Paris</option>
+          <option value="51.5074,-0.1278">London</option>
+          <option value="52.5200,13.4050">Berlin</option>
+          <option value="40.7128,-74.0060">New York</option>
+        </select>
+      </div>
+      <div class="solar-row">
+        <label>Analysis Period</label>
+        <select id="periodSelect">
+          <option value="summer">Summer Solstice (Jun 21)</option>
+          <option value="winter">Winter Solstice (Dec 21)</option>
+          <option value="equinox">Spring Equinox (Mar 21)</option>
+          <option value="year">Full Year (slower)</option>
+        </select>
+      </div>
+      <div class="solar-row">
+        <label>Sample Density</label>
+        <select id="densitySelect">
+          <option value="low">Low (fast)</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High (slow)</option>
+        </select>
+      </div>
+      <div class="solar-row checkbox-row">
+        <label class="solar-checkbox">
+          <input type="checkbox" id="showSunPath">
+          <span>Show Sun Path</span>
+        </label>
+      </div>
+      <!-- Analysis disabled for now - too slow, keep for future development -->
+      <button id="runAnalysisBtn" class="run-analysis-btn" disabled title="Coming soon">Run Analysis</button>
+      <button id="clearAnalysisBtn" class="clear-analysis-btn" style="display:none;">Clear Heatmap</button>
+      <div id="analysisProgress" class="analysis-progress" style="display:none;">
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <span class="progress-text">Analyzing...</span>
+      </div>
+      <div id="colorLegend" class="color-legend" style="display:none;">
+        <div class="legend-gradient"></div>
+        <div class="legend-labels">
+          <span>0%</span>
+          <span>50%</span>
+          <span>100%</span>
+        </div>
+        <div class="legend-title">Sun Exposure</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import fs from "fs";
-import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,41 +9,12 @@ const __dirname = path.dirname(__filename);
 export const app = express();
 const PORT = process.env.PORT || 3000;
 const uploadsDir = path.join(__dirname, "uploads");
+const worldStatePath = path.join(__dirname, "world-state.json");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (_req, file, cb) {
-    // Keep original filename or add timestamp to prevent overwrites
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const basename = path.basename(file.originalname, ext);
-    cb(null, basename + '-' + uniqueSuffix + ext);
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  fileFilter: function (_req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (['.obj', '.glb', '.gltf'].includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only .obj, .glb, and .gltf files are allowed'));
-    }
-  },
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB max file size
-  }
-});
-
-app.use(express.json());
 app.use("/uploads", express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -68,26 +38,80 @@ app.get("/api/list", (_req, res) => {
   });
 });
 
-app.post("/api/upload", upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
-  res.json({
-    success: true,
-    file: {
-      name: req.file.filename,
-      originalName: req.file.originalname,
-      url: `/uploads/${req.file.filename}`,
-      size: req.file.size
+// Upload - MUST be before express.json() to receive raw body
+app.post("/api/upload", express.raw({ type: '*/*', limit: '50mb' }), (req, res) => {
+  try {
+    const filename = req.query.filename;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
     }
-  });
+
+    const ext = path.extname(filename).toLowerCase();
+    if (!['.obj', '.glb', '.gltf'].includes(ext)) {
+      return res.status(400).json({ error: 'Only .obj, .glb, and .gltf files are allowed' });
+    }
+
+    // Check if body exists
+    if (!req.body || req.body.length === 0) {
+      return res.status(400).json({ error: 'No file data received' });
+    }
+
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const basename = path.basename(filename, ext);
+    const savedFilename = basename + '-' + uniqueSuffix + ext;
+    const filePath = path.join(uploadsDir, savedFilename);
+
+    fs.writeFileSync(filePath, req.body);
+
+    const stats = fs.statSync(filePath);
+
+    res.json({
+      success: true,
+      file: {
+        name: savedFilename,
+        url: `/uploads/${savedFilename}`,
+        size: stats.size
+      }
+    });
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Upload failed: ' + err.message });
+  }
+});
+
+// Apply JSON parsing for other routes
+app.use(express.json());
+
+// World state - GET
+app.get("/api/world", (_req, res) => {
+  try {
+    if (fs.existsSync(worldStatePath)) {
+      const data = fs.readFileSync(worldStatePath, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json({ voxels: [] });
+    }
+  } catch (err) {
+    console.error('Load world error:', err);
+    res.json({ voxels: [] });
+  }
+});
+
+// World state - POST
+app.post("/api/world", (req, res) => {
+  try {
+    fs.writeFileSync(worldStatePath, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Save world error:', err);
+    res.status(500).json({ error: 'Failed to save world state' });
+  }
 });
 
 app.use((err, _req, res, _next) => {
-  if (err?.message?.includes("Only .obj")) {
-    res.status(400).json({ error: err.message });
-    return;
-  }
+  console.error('Server error:', err);
   res.status(500).json({ error: "Server error" });
 });
 
