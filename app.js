@@ -1361,14 +1361,15 @@ function resetRenderMode() {
   hemiLight.intensity = 1;
 }
 
-// Apply Shadow Mode
+// Apply Shadow Mode - plaster model look
 function applyShadowMode() {
   shadowGround.visible = true;
 
-  const uniformMaterial = new THREE.MeshStandardMaterial({
-    color: 0xcccccc,
-    roughness: 0.7,
-    metalness: 0.1,
+  // Warm off-white plaster color
+  const plasterMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf5f0e6,  // Warm cream/plaster white
+    roughness: 0.95,   // Very matte like plaster
+    metalness: 0.0,    // No metalness
     side: THREE.DoubleSide
   });
 
@@ -1379,7 +1380,7 @@ function applyShadowMode() {
           if (!savedMaterials.has(child.uuid)) {
             savedMaterials.set(child.uuid, child.material);
           }
-          child.material = uniformMaterial.clone();
+          child.material = plasterMaterial.clone();
           child.castShadow = true;
           child.receiveShadow = true;
         }
@@ -1387,9 +1388,10 @@ function applyShadowMode() {
     }
   });
 
-  ambientLight.intensity = 0.6;
-  dirLight.intensity = 1.5;
-  hemiLight.intensity = 0.5;
+  // Softer lighting for plaster look
+  ambientLight.intensity = 0.8;
+  dirLight.intensity = 1.2;
+  hemiLight.intensity = 0.6;
 }
 
 // Apply Wireframe Mode
